@@ -30,39 +30,13 @@ def auth_handler():
     return key, remember_device
 
 
-class AskWindow(wx.Frame):
-    def __init__(self, *args, **kwargs):
-        super(AskWindow, self).__init__(*args, **kwargs)
-        self.InitUI()
-        self.code = ""
-    def InitUI(self):
-        # wx.Frame(None, style=wx.CAPTION | wx.CLIP_CHILDREN)
-        panel = wx.Panel(self, wx.ID_ANY)
-        PasswordText = wx.TextCtrl(panel, -1, "", size=(100, -1))
-        PasswordText.SetInsertionPoint(0)
-        def onButton(frame):
-            self.code = PasswordText.GetLineText(0)
-            
-            self.OnQuit(frame)
-        button = wx.Button(panel, wx.ID_ANY, locale['sumbit'], (10, 10))
-        button.Bind(wx.EVT_BUTTON, onButton)
-        sizer = wx.FlexGridSizer(cols=2, hgap=6, vgap=6)
-        sizer.AddMany([PasswordText,button])
-        panel.SetSizer(sizer)
-        self.SetSize((200, 65))
-        self.Centre()
-        self.Show()
-    #def updateTitle(self, title):
-    #    self.SetTitle(title)
-    def OnQuit(self, e):
-        self.Close()
-
 
 class LoginWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         super(LoginWindow, self).__init__(*args, **kwargs)
         self.InitUI()
     def InitUI(self):
+        frame = self
         panel = wx.Panel(self, wx.ID_ANY)
         LoginLabel = wx.StaticText(panel, -1, locale['login']+":")
         LoginText = wx.TextCtrl(panel, -1, "+7", size=(175, -1))
@@ -79,15 +53,12 @@ class LoginWindow(wx.Frame):
         statusbar = self.CreateStatusBar(1)
         statusbar.SetStatusText(locale['enter_credentials']) 
         
-        def onButton(self):
+        def onButton(frame):
             login = LoginText.GetLineText(0)
             password = PasswordText.GetLineText(0)
             token = TokenText.GetLineText(0)
+            twoth = self.twoFactor()
             statusbar.SetStatusText("Trying to login...")
-            asktext = AskWindow(None,style=wx.CAPTION | wx.CLIP_CHILDREN)
-            asktext.SetTitle(locale['2fa'])
-            self.Disable()
-            twoth = asktext.code
             print(login,token,password,twoth)
         def gettoken(self):
             webbrowser.open(token_page)
@@ -106,7 +77,17 @@ class LoginWindow(wx.Frame):
         self.SetSize((280, 180))
         self.SetTitle("wxVk "+locale['login'])
         self.Centre()
-    
+    def twoFactor(self):
+            dlg = wx.TextEntryDialog(self,locale['2fa'],'',style=wx.OK)
+            dlg.SetValue("")
+            dlg.SetMaxLength(6)
+            while len(dlg.GetValue()) < 6 or not dlg.GetValue().isdecimal():
+                dlg.ShowModal()
+            #    if dlg.ShowModal() == wx.ID_OK:
+            #        dlg.GetValue()
+            toReturn = dlg.GetValue()
+            dlg.Destroy()
+            return toReturn
     def OnQuit(self, e):
         self.Close()
     def reenable(self):
