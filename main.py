@@ -13,7 +13,10 @@ locale_en_US_UTF_8 = {
     "token": "Token",
     "enter_credentials" : "Enter your credentials",
     "sumbit" : "Sumbit",
-    '2fa' : "Enter 2FA code"
+    '2fa' : "Enter 2FA code",
+    "tryauth": "Trying to authorize...",
+    "success" : "Success!",
+    "error" : "Error: "
 }
 locale = {}
 if language == "en_US.UTF-8":
@@ -24,12 +27,6 @@ login = ""
 password = ""
 token_page = "https://vkhost.github.io/"
 token = ""
-def auth_handler():
-    key = input("Введите код для двухфакторной аутификации: ")
-    remember_device = True
-    return key, remember_device
-
-
 
 class LoginWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -57,9 +54,21 @@ class LoginWindow(wx.Frame):
             login = LoginText.GetLineText(0)
             password = PasswordText.GetLineText(0)
             token = TokenText.GetLineText(0)
-            twoth = self.twoFactor()
-            statusbar.SetStatusText("Trying to login...")
-            print(login,token,password,twoth)
+            statusbar.SetStatusText(locale["tryauth"])
+            def auth_handler():
+                key = self.twoFactor()
+                remember_device = True
+                return key, remember_device
+            vk_session = vk_api.VkApi(
+                login, password, token=token, app_id="2685278",
+                auth_handler=auth_handler
+            )
+            try:
+                vk_session.auth()
+                statusbar.SetStatusText(locale['success'])
+            except vk_api.AuthError as error_msg:
+                statusbar.SetStatusText(locale['error'])
+                print(error_msg)
         def gettoken(self):
             webbrowser.open(token_page)
 
@@ -83,8 +92,6 @@ class LoginWindow(wx.Frame):
             dlg.SetMaxLength(6)
             while len(dlg.GetValue()) < 6 or not dlg.GetValue().isdecimal():
                 dlg.ShowModal()
-            #    if dlg.ShowModal() == wx.ID_OK:
-            #        dlg.GetValue()
             toReturn = dlg.GetValue()
             dlg.Destroy()
             return toReturn
