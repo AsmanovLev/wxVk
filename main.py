@@ -16,7 +16,8 @@ locale_en_US_UTF_8 = {
     '2fa' : "Enter 2FA code",
     "tryauth": "Trying to authorize...",
     "success" : "Success!",
-    "error" : "Error: "
+    "error" : "Error: ",
+    "savecreds": "Remember credentials"
 }
 locale = {}
 if language == "en_US.UTF-8":
@@ -46,6 +47,8 @@ class LoginWindow(wx.Frame):
         TokenLabel = wx.StaticText(panel, -1, locale['token']+":")
         TokenText = wx.TextCtrl(panel, -1, "", size=(175, -1),style=wx.TE_PASSWORD)
         TokenText.SetInsertionPoint(0)
+
+        savecreds = wx.CheckBox(panel, -1, locale['savecreds'])
         
         statusbar = self.CreateStatusBar(1)
         statusbar.SetStatusText(locale['enter_credentials']) 
@@ -76,14 +79,16 @@ class LoginWindow(wx.Frame):
         gettokenButton.Bind(wx.EVT_BUTTON, gettoken)
         button = wx.Button(panel, wx.ID_ANY, locale['login'], (10, 10))
         button.Bind(wx.EVT_BUTTON, onButton)
-        
-        sizer = wx.FlexGridSizer(cols=2, hgap=6, vgap=6)
-        sizer.AddMany([ LoginLabel, LoginText,
+        sizerTexts = wx.FlexGridSizer(cols=2, hgap=6, vgap=6)
+        sizerTexts.AddMany([ LoginLabel, LoginText,
                         PasswordLabel, PasswordText,
-                        TokenLabel, TokenText,
-                        button, gettokenButton])
-        panel.SetSizer(sizer) 
-        self.SetSize((280, 180))
+                        TokenLabel, TokenText])
+        sizerButtons = wx.FlexGridSizer(cols=2, hgap=6, vgap=6)
+        sizerButtons.AddMany([button, gettokenButton])
+        sizerMain = wx.FlexGridSizer(cols=1, hgap=6, vgap=6)
+        sizerMain.AddMany([sizerTexts,savecreds,sizerButtons])
+        panel.SetSizer(sizerMain) 
+        self.SetSize((255, 200))
         self.SetTitle("wxVk "+locale['login'])
         self.Centre()
     def twoFactor(self):
