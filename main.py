@@ -39,7 +39,6 @@ def initDB():
                                 param TEXT PRIMARY KEY,
                                 value TEXT NOT NULL);'''
     DBcursor.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='PERSONALINFO' ''')
-
     if DBcursor.fetchone()[0]==1:
         print('Table found!')
     else:
@@ -47,6 +46,27 @@ def initDB():
         DBcursor.execute(sqlite_create_table_query)
         conn.commit()
         print("Table PERSONALINFO has been created")
+    
+
+    sqlite_create_table_query = '''CREATE TABLE USERINFO (
+                                id INTEGER PRIMARY KEY,
+                                username TEXT NOT NULL);'''
+    
+    DBcursor.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='USERINFO' ''')
+    if DBcursor.fetchone()[0]==1:
+        print('Table found!')
+    else:
+        print('Table not found! Creating new table.')
+        DBcursor.execute(sqlite_create_table_query)
+        conn.commit()
+        print("Table USERINFO has been created")
+def getUserInfo(userid):
+    raw = DBcursor.execute(''' SELECT username FROM USERINFO WHERE id = {}; '''.format(userid)).fetchall()
+    return raw
+def setUserInfo(id,username):
+    id = str(id)
+    username = str(username)
+    DBcursor.execute(''' INSERT INTO 'USERINFO' (id, username) VALUES ('{}', '{}') ON CONFLICT(id) DO UPDATE SET username='{}' '''.format(id, username, username))
 def getPersonalInfo():
     raw = DBcursor.execute("SELECT param, value FROM PERSONALINFO; ").fetchall()
     returnDict = {}
@@ -176,13 +196,42 @@ class MainWindow(wx.Frame):
         self.vk_session = None
     
     def Start(self):
-        #print(self.vk_session.)
+        vk = self.vk_session.get_api()
+        def getName(peerid):
+            raw = getUserInfo(peerid)
+            ischat = False
+            if len(raw) == 0:
+                raw = None
+                if peerid < 2000000000:
+                    raw = vk.users.get(user_ids=peerid)[0]
+                    raw = raw['first_name']+" "+raw['last_name']
+                else:
+                    raw = vk.messages.getChat(chat_id=peerid-2000000000)['title'] + " 💬"
+                setUserInfo(peerid,raw)
+                conn.commit()
+            else:
+                raw = raw[0]
+            if peerid >= 2000000000:
+                ischat = True
+            return raw, ischat
         panel = wx.Panel(self, wx.ID_ANY)
-        listFrame = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),['test','list'],wx.LB_SINGLE)
+        listFrame = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
+        usernameText = wx.StaticText(panel,-1,"")
+        sizerMain = wx.FlexGridSizer(cols=1, hgap=6, vgap=6)
+        sizerMain.AddMany([usernameText,listFrame])
+        panel.SetSizer(sizerMain)
         self.SetSize((600, 300))
         self.SetTitle('wxVK')
         self.Centre()
         self.Show()
+
+        profileInfo=vk.account.getProfileInfo()
+        usernameText.SetLabel(profileInfo['first_name']+" "+profileInfo['last_name'])
+        conversations = vk.messages.getConversations(count=20)
+        for i in conversations['items']:
+            listFrame.Append(getName(i['conversation']['peer']['id'])[0])
+
+    
     
     def OnQuit(self, e):
         self.Close()
