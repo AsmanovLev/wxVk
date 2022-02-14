@@ -24,13 +24,10 @@ locale_en_US_UTF_8 = {
     "savecreds": "Remember credentials"
 }
 locale = {}
+
 if language == "en_US.UTF-8":
     locale = locale_en_US_UTF_8
 
-#global login, password, token,
-#login = ""
-#password = ""
-#token = ""
 token_page = "https://vkhost.github.io/"
 
 conn = sqlite3.connect('main.db')
@@ -64,13 +61,12 @@ def deletePersonalInfo(param):
     DBcursor.execute(''' DELETE FROM PERSONALINFO WHERE param='{}' '''.format(param))
 initDB()
 conn.commit()
-print(getPersonalInfo())
+#print(getPersonalInfo()) #WARNING! IF YOUR CREDENTIALS IS SAVED, THEY WILL APPER IN CONSOLE OUTPUT
 class LoginWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         super(LoginWindow, self).__init__(*args, **kwargs)
         self.InitUI()
     def InitUI(self):
-        #frame = self
         rememberedLogin = ""
         rememberedPassword = ""
         rememberedToken = ""
@@ -137,6 +133,7 @@ class LoginWindow(wx.Frame):
                 mainwindow = MainWindow(None)
                 mainwindow.vk_session = vk_session
                 mainwindow.Start()
+                self.Close()
         def gettoken(self):
             webbrowser.open(token_page)
 
@@ -180,10 +177,12 @@ class MainWindow(wx.Frame):
     
     def Start(self):
         #print(self.vk_session.)
-        listFrame = wx.ListBox(self,wx.ID_ANY,(0,0),(100,-1),['test','list'],wx.LB_SINGLE)
+        panel = wx.Panel(self, wx.ID_ANY)
+        listFrame = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),['test','list'],wx.LB_SINGLE)
         self.SetSize((600, 300))
         self.SetTitle('wxVK')
         self.Centre()
+        self.Show()
     
     def OnQuit(self, e):
         self.Close()
