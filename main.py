@@ -51,11 +51,17 @@ def initDB():
         conn.commit()
         print("Table PERSONALINFO has been created")
 def getPersonalInfo():
-    return DBcursor.execute("SELECT param, value FROM PERSONALINFO; ").fetchall()
+    raw = DBcursor.execute("SELECT param, value FROM PERSONALINFO; ").fetchall()
+    returnDict = {}
+    for i in raw:
+        returnDict[i[0]] = i[1]
+    return returnDict
 def setPersonalInfo(param,value):
     param = str(param)
     value = str(value)
     DBcursor.execute(''' INSERT INTO 'PERSONALINFO' (param, value) VALUES ('{}', '{}') ON CONFLICT(param) DO UPDATE SET value='{}' '''.format(param, value,value))
+def deletePersonalInfo(param):
+    DBcursor.execute(''' DELETE FROM PERSONALINFO WHERE param='{}' '''.format(param))
 initDB()
 conn.commit()
 print(getPersonalInfo())
@@ -64,22 +70,33 @@ class LoginWindow(wx.Frame):
         super(LoginWindow, self).__init__(*args, **kwargs)
         self.InitUI()
     def InitUI(self):
-        frame = self
+        #frame = self
+        rememberedLogin = ""
+        rememberedPassword = ""
+        rememberedToken = ""
+        rememberedSaveCreds = False
+        SavedCredentials = getPersonalInfo()
+        if 'login' in SavedCredentials.keys() and 'password' in SavedCredentials.keys() and 'usertoken' in SavedCredentials.keys():
+            rememberedLogin=SavedCredentials['login']
+            rememberedPassword=SavedCredentials['password']
+            rememberedToken=SavedCredentials['usertoken']
+            rememberedSaveCreds=True
         panel = wx.Panel(self, wx.ID_ANY)
         LoginLabel = wx.StaticText(panel, -1, locale['login']+":")
-        LoginText = wx.TextCtrl(panel, -1, "+7", size=(175, -1))
+        LoginText = wx.TextCtrl(panel, -1, rememberedLogin, size=(175, -1))
         LoginText.SetInsertionPoint(0)
         
         PasswordLabel = wx.StaticText(panel, -1, locale['password']+":")
-        PasswordText = wx.TextCtrl(panel, -1, "", size=(175, -1),style=wx.TE_PASSWORD)
+        PasswordText = wx.TextCtrl(panel, -1, rememberedPassword, size=(175, -1),style=wx.TE_PASSWORD)
         PasswordText.SetInsertionPoint(0)
         
         TokenLabel = wx.StaticText(panel, -1, locale['token']+":")
-        TokenText = wx.TextCtrl(panel, -1, "", size=(175, -1),style=wx.TE_PASSWORD)
+        TokenText = wx.TextCtrl(panel, -1, rememberedToken, size=(175, -1),style=wx.TE_PASSWORD)
         TokenText.SetInsertionPoint(0)
 
         savecreds = wx.CheckBox(panel, -1, locale['savecreds'])
-        
+        savecreds.SetValue(rememberedSaveCreds)
+
         statusbar = self.CreateStatusBar(1)
         statusbar.SetStatusText(locale['enter_credentials']) 
         
@@ -91,6 +108,11 @@ class LoginWindow(wx.Frame):
                 setPersonalInfo('login',login)
                 setPersonalInfo('password',password)
                 setPersonalInfo('usertoken', token)
+                conn.commit()
+            else:
+                deletePersonalInfo('login')
+                deletePersonalInfo('password')
+                deletePersonalInfo('usertoken')
                 conn.commit()
             statusbar.SetStatusText(locale["tryauth"])
             def auth_handler():
