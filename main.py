@@ -1,9 +1,13 @@
+from re import A, T
 import wx
 import vk_api
 import webbrowser
+import sqlite3
 import os
 language = os.getenv('LANG')
 del os
+
+
 print(language)
 locale_en_US_UTF_8 = {
     "quit": "Quit",
@@ -23,12 +27,38 @@ locale = {}
 if language == "en_US.UTF-8":
     locale = locale_en_US_UTF_8
 
-global login, password, token 
-login = ""
-password = ""
+#global login, password, token,
+#login = ""
+#password = ""
+#token = ""
 token_page = "https://vkhost.github.io/"
-token = ""
 
+conn = sqlite3.connect('main.db')
+print("Database successfully initialized")
+DBcursor = conn.cursor()
+
+def initDB():
+    sqlite_create_table_query = '''CREATE TABLE PERSONALINFO (
+                                param TEXT PRIMARY KEY,
+                                value TEXT NOT NULL);'''
+    DBcursor.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='PERSONALINFO' ''')
+
+    if DBcursor.fetchone()[0]==1:
+        print('Table found!')
+    else:
+        print('Table not found! Creating new table.')
+        DBcursor.execute(sqlite_create_table_query)
+        conn.commit()
+        print("Table PERSONALINFO has been created")
+def getPersonalInfo():
+    return DBcursor.execute("SELECT param, value FROM PERSONALINFO; ").fetchall()
+def setPersonalInfo(param,value):
+    param = str(param)
+    value = str(value)
+    DBcursor.execute(''' INSERT INTO 'PERSONALINFO' (param, value) VALUES ('{}', '{}') ON CONFLICT(param) DO UPDATE SET value='{}' '''.format(param, value,value))
+initDB()
+conn.commit()
+print(getPersonalInfo())
 class LoginWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         super(LoginWindow, self).__init__(*args, **kwargs)
@@ -57,6 +87,11 @@ class LoginWindow(wx.Frame):
             login = LoginText.GetLineText(0)
             password = PasswordText.GetLineText(0)
             token = TokenText.GetLineText(0)
+            if savecreds.GetValue():
+                setPersonalInfo('login',login)
+                setPersonalInfo('password',password)
+                setPersonalInfo('usertoken', token)
+                conn.commit()
             statusbar.SetStatusText(locale["tryauth"])
             def auth_handler():
                 key = self.twoFactor()
@@ -66,12 +101,20 @@ class LoginWindow(wx.Frame):
                 login, password, token=token, app_id="2685278",
                 auth_handler=auth_handler
             )
+            authStatus = False
             try:
                 vk_session.auth()
                 statusbar.SetStatusText(locale['success'])
+                authStatus = True    
             except vk_api.AuthError as error_msg:
                 statusbar.SetStatusText(locale['error'])
                 print(error_msg)
+                authStatus = False
+            
+            if authStatus == True:
+                mainwindow = MainWindow(None)
+                mainwindow.vk_session = vk_session
+                mainwindow.Start()
         def gettoken(self):
             webbrowser.open(token_page)
 
@@ -111,14 +154,15 @@ class MainWindow(wx.Frame):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.InitUI()
-
-    def InitUI(self):
+        self.vk_session = None
+    
+    def Start(self):
+        #print(self.vk_session.)
         listFrame = wx.ListBox(self,wx.ID_ANY,(0,0),(100,-1),['test','list'],wx.LB_SINGLE)
         self.SetSize((600, 300))
         self.SetTitle('wxVK')
         self.Centre()
-
+    
     def OnQuit(self, e):
         self.Close()
 
