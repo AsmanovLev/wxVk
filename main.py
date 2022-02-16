@@ -152,8 +152,8 @@ class LoginWindow(wx.Frame):
             if authStatus == True:
                 mainwindow = MainWindow(None)
                 mainwindow.vk_session = vk_session
-                mainwindow.Start()
                 self.Close()
+                mainwindow.Start()
         def gettoken(self):
             webbrowser.open(token_page)
 
@@ -214,6 +214,45 @@ class MainWindow(wx.Frame):
             if peerid >= 2000000000:
                 ischat = True
             return raw, ischat
+
+        def getMessengerNames(conversations):
+            ischats = []
+            names = []
+            usernames = []
+            chatnames = []
+            groupnames = []
+            groupids = []
+            userids = []
+            ids=[]
+            for conversation in conversations['items']:
+                if conversation['conversation']['peer']['type'] == 'chat':
+                    ischats.append(1)
+                    chatnames.append(conversation['conversation']['chat_settings']['title'])
+                elif conversation['conversation']['peer']['type'] == 'user':
+                    ischats.append(0)
+                    userids.append(conversation['conversation']['peer']['id'])
+                elif conversation['conversation']['peer']['type'] == 'group':
+                    ischats.append(2)
+                    groupids.append(-conversation['conversation']['peer']['id'])
+                ids.append(conversation['conversation']['peer']['id'])
+            for userdata in vk.users.get(user_ids=userids):
+                usernames.append(userdata['first_name']+" "+userdata['last_name'])
+            for groupdata in vk.groups.getById(group_ids=groupids):
+                groupnames.append(groupdata['name'])
+            for ischat in ischats:
+                if ischat == 1:
+                    names.append(chatnames.pop(0))
+                elif ischat == 0:
+                    names.append(usernames.pop(0))
+                elif ischat == 2:
+                    names.append(groupnames.pop(0))
+            return [names,ids]
+        
+        '''def expanded(widget, padding=0):
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            sizer.Add(widget, 1, wx.EXPAND|wx.ALL, padding)
+            return sizer'''
+
         panel = wx.Panel(self, wx.ID_ANY)
         listFrame = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
         usernameText = wx.StaticText(panel,-1,"")
@@ -227,9 +266,16 @@ class MainWindow(wx.Frame):
 
         profileInfo=vk.account.getProfileInfo()
         usernameText.SetLabel(profileInfo['first_name']+" "+profileInfo['last_name'])
-        conversations = vk.messages.getConversations(count=20)
-        for i in conversations['items']:
-            listFrame.Append(getName(i['conversation']['peer']['id'])[0])
+        conversations = vk.messages.getConversations(count=0)
+        conversationCount = conversations['count']
+        chatsCounter = 0
+        while chatsCounter < conversationCount:
+            tempconv = vk.messages.getConversations(count=200,offset=chatsCounter)['items']
+            for i in tempconv:
+                conversations['items'].append(i)
+            chatsCounter = chatsCounter + 200
+        namebase = getMessengerNames(conversations)
+        listFrame.Append(namebase[0])
 
     
     
