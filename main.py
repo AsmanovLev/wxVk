@@ -3,13 +3,12 @@ import wx
 import vk_api
 import webbrowser
 import sqlite3
-import os
-language = os.getenv('LANG')
-del os
-
-
+from threading import Thread
+from locale import getdefaultlocale
+language, _ = getdefaultlocale()
+del getdefaultlocale
 print(language)
-locale_en_US_UTF_8 = {
+locale_en_US = {
     "quit": "Quit",
     "login": "Login",
     "password": "Password",
@@ -21,14 +20,15 @@ locale_en_US_UTF_8 = {
     "tryauth": "Trying to authorize...",
     "success" : "Success!",
     "error" : "Error",
-    "badpass": "Bad Password",
+    "badpass": "Wrong password",
     "savecreds": "Remember credentials",
-    "loading": "Loading"
+    "loading": "Loading",
+    "messages":"Messages"
 }
 locale = {}
 
-if language == "en_US.UTF-8":
-    locale = locale_en_US_UTF_8
+if language == "en_US":
+    locale = locale_en_US
 
 token_page = "https://vkhost.github.io/"
 
@@ -141,14 +141,13 @@ class LoginWindow(wx.Frame):
                 login, password, token=token, app_id="2685278",
                 auth_handler=auth_handler
             )
-            print(login, password)
             authStatus = False
             try:
                 vk_session.auth()
                 statusbar.SetStatusText(locale['success'])
                 authStatus = True    
             except vk_api.AuthError as error_msg:
-                if error_msg == vk_api.exceptions.BadPassword:
+                if str(error_msg) == "Bad password":
                     statusbar.SetStatusText(locale['badpass'])
                 else:
                     statusbar.SetStatusText(locale['error'])
@@ -222,7 +221,6 @@ class MainWindow(wx.Frame):
             return raw, ischat
 
         def getMessengerNames(conversations):
-            global statusbar
             ischats = []
             names = []
             usernames = []
@@ -255,29 +253,49 @@ class MainWindow(wx.Frame):
                 elif ischat == 2:
                     names.append(groupnames.pop(0))
             return [names,ids]
-        
+        def getMessages(id):
+            messages=[]
+            self.statusbar.SetStatusText(locale['loading'] + locale['messages'])
+            messagesHistory = vk.messages.getHistory(count=200,peer_id=id, fields=[])
+            for message in messagesHistory['items']:
+                messages.append(message['text'])
+            self.statusbar.SetStatusText('')
+            return messages
         '''def expanded(widget, padding=0):
             sizer = wx.BoxSizer(wx.VERTICAL)
             sizer.Add(widget, 1, wx.EXPAND|wx.ALL, padding)
             return sizer'''
+        idbase = []
+        def onSelectChat(self):
+            obj = self.GetSelection()
+            if messagesList.Count != 0:
+                for id in range(0, messagesList.Count):
+                    messagesList.Delete(0) 
+            messagesList.Append(getMessages(idbase[obj]))
 
         panel = wx.Panel(self, wx.ID_ANY)
-        listFrame = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
-        usernameText = wx.StaticText(panel,-1,"")
-        sizerMain = wx.FlexGridSizer(cols=1, hgap=6, vgap=6)
-        sizerMain.AddMany([usernameText,listFrame])
+        chatsList = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
+        chatsList.Bind(wx.EVT_LISTBOX, onSelectChat)
+        messagesList = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
+        #usernameText = wx.StaticText(panel,-1,"")
+        #sizerMain = wx.FlexGridSizer(cols=1, hgap=6, vgap=6)
+        sizerGeneral = wx.BoxSizer(wx.HORIZONTAL)
+        #sizerMain.AddMany([usernameText,listFrame])
         
+        sizerGeneral.Add(chatsList, wx.ID_ANY, wx.EXPAND | wx.ALL, 5)
+        sizerGeneral.Add(messagesList, wx.ID_ANY, wx.EXPAND | wx.ALL, 5)
+
         self.statusbar = self.CreateStatusBar(1)
         self.statusbar.SetStatusText(locale['loading'] + "...") 
         
-        panel.SetSizer(sizerMain)
+        panel.SetSizer(sizerGeneral)
         self.SetSize((600, 300))
         self.SetTitle('wxVK')
         self.Centre()
         self.Show()
 
         profileInfo=vk.account.getProfileInfo()
-        usernameText.SetLabel(profileInfo['first_name']+" "+profileInfo['last_name'])
+        #usernameText.SetLabel(profileInfo['first_name']+" "+profileInfo['last_name'])
         conversations = vk.messages.getConversations(count=0)
         conversationCount = conversations['count']
         #statusbar.SetStatusText(locale['loading'] + " 0/{}".format(str(conversationCount))) 
@@ -288,11 +306,10 @@ class MainWindow(wx.Frame):
                 self.statusbar.SetStatusText(locale['loading'] + " {}/{}".format(str(tempconv.index(i)),str(conversationCount))) 
                 conversations['items'].append(i)
             chatsCounter = chatsCounter + 200
-        namebase = getMessengerNames(conversations)
-        self.statusbar.SetStatusText("") 
-        listFrame.Append(namebase[0])
+        namebase, idbase = getMessengerNames(conversations)
+        self.statusbar.SetStatusText("")
+        chatsList.Append(namebase)
 
-    
     
     def OnQuit(self, e):
         self.Close()
