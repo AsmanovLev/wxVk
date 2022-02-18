@@ -263,44 +263,55 @@ class MainWindow(wx.Frame):
             userids = []
             ids=[]
             for uid in uids:
-                self.statusbar.SetStatusText(locale['loading'] + " {}/{}".format(conversations['items'].index(conversation),len(conversations['items']))) 
-                if uid > 0:
+                self.statusbar.SetStatusText(locale['loading']+" "+locale['messages'] + " {}/{}".format(uids.index(uid),len(uids))) 
+                if uid > 0 and userids.count(uid) == 0:
                     userids.append(uid)
-                else:
+                elif uid < 0 and groupids.count(-uid) == 0:
                     groupids.append(-uid)
             
-            for userdata in vk.users.get(user_ids=userids):
-                usernames.append(userdata['first_name']+" "+userdata['last_name'])
+            if len(userids) != 0:
+                for userdata in vk.users.get(user_ids=userids):
+                    usernames.append(userdata['first_name']+" "+userdata['last_name'])
+            
+            if len(groupids) != 0:
+                for groupdata in vk.groups.getById(group_ids=groupids):
+                    groupnames.append(groupdata['name'])
+                for groupid in groupids:
+                    ids.append(-groupid)
+                names.extend(groupnames)
+
             ids.extend(userids)
-
-            for groupdata in vk.groups.getById(group_ids=groupids):
-                groupnames.append(groupdata['name'])
-            for groupid in groupids:
-                ids.append(-groupid)
-
-            names.extend(groupnames)
+            names.extend(usernames)
             return dict(zip(ids, names))
 
         def getMessages(id):
             messages=[]
+            uids = [] 
+            text = []
             self.statusbar.SetStatusText(locale['loading']+" "+locale['messages'])
             messagesHistory = vk.messages.getHistory(count=200,peer_id=id, fields=[])
             for message in messagesHistory['items']:
                 messages.append(message['text'])
+                uids.append(message['from_id'])
+            usernames = getUsernamesInChat(uids)
+            #print("usernames = ",usernames,"\nuids = ",uids)
+            for i in range(0,len(uids)):
+                uids[i] = usernames[uids[i]]
             self.statusbar.SetStatusText('')
-            return messages
-        '''def expanded(widget, padding=0):
-            sizer = wx.BoxSizer(wx.VERTICAL)
-            sizer.Add(widget, 1, wx.EXPAND|wx.ALL, padding)
-            return sizer'''
+            for i in range(0,len(messages)):
+                text.append(uids[i]+": "+messages[i])
+            return text
+        
         idbase = []
         def onSelectChat(self):
             obj = self.GetSelection()
             if messagesList.Count != 0:
                 for id in range(0, messagesList.Count):
                     messagesList.Delete(0) 
-            messagesList.Append(getMessages(idbase[obj]))
-
+            text = getMessages(idbase[obj])
+            text.reverse()
+            messagesList.Append(text)
+            messagesList.SetSelection(messagesList.Count-1)
         
         splitter = wx.SplitterWindow(self, -1)
         splitter.SetMinimumPaneSize(50)
