@@ -155,7 +155,7 @@ class LoginWindow(wx.Frame):
                 authStatus = False
             
             if authStatus == True:
-                mainwindow = MainWindow(None)
+                mainwindow = MainWindow(None, -1, 'wx.SplitterWindow')
                 mainwindow.vk_session = vk_session
                 self.Close()
                 mainwindow.Start()
@@ -273,22 +273,41 @@ class MainWindow(wx.Frame):
                     messagesList.Delete(0) 
             messagesList.Append(getMessages(idbase[obj]))
 
-        panel = wx.Panel(self, wx.ID_ANY)
-        chatsList = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
+        
+        splitter = wx.SplitterWindow(self, -1)
+        splitter.SetMinimumPaneSize(50)
+
+
+        panel1 = wx.Panel(splitter, wx.ID_ANY)
+        panel2 = wx.Panel(splitter, wx.ID_ANY)
+        
+        chatsSizer = wx.BoxSizer(wx.VERTICAL)  
+        chatsList = wx.ListBox(panel1,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
         chatsList.Bind(wx.EVT_LISTBOX, onSelectChat)
-        messagesList = wx.ListBox(panel,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
+        chatsSizer.Add(chatsList, wx.ID_ANY, wx.EXPAND | wx.ALL, 2)
+        panel1.SetSizer(chatsSizer)
+
+
+        messagesSizer = wx.BoxSizer(wx.VERTICAL)  
+        messagesList = wx.ListBox(panel2,wx.ID_ANY,(0,0),(100,-1),[],wx.LB_SINGLE | wx.LB_ALWAYS_SB)
+        messagesSizer.Add(messagesList, wx.ID_ANY, wx.EXPAND | wx.ALL, 2)
+        panel2.SetSizer(messagesSizer)
+        
         #usernameText = wx.StaticText(panel,-1,"")
         #sizerMain = wx.FlexGridSizer(cols=1, hgap=6, vgap=6)
-        sizerGeneral = wx.BoxSizer(wx.HORIZONTAL)
+        #sizerGeneral = wx.BoxSizer(wx.HORIZONTAL)
         #sizerMain.AddMany([usernameText,listFrame])
         
-        sizerGeneral.Add(chatsList, wx.ID_ANY, wx.EXPAND | wx.ALL, 5)
-        sizerGeneral.Add(messagesList, wx.ID_ANY, wx.EXPAND | wx.ALL, 5)
+        #sizerGeneral.Add(chatsList, wx.ID_ANY, wx.EXPAND | wx.ALL, 5)
+        #sizerGeneral.Add(messagesList, wx.ID_ANY, wx.EXPAND | wx.ALL, 5)
 
+        #panel.SetSizer(sizerGeneral)
+        
         self.statusbar = self.CreateStatusBar(1)
         self.statusbar.SetStatusText(locale['loading'] + "...") 
         
-        panel.SetSizer(sizerGeneral)
+        splitter.SplitVertically(panel1, panel2)
+        
         self.SetSize((600, 300))
         self.SetTitle('wxVK')
         self.Centre()
