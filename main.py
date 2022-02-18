@@ -220,7 +220,7 @@ class MainWindow(wx.Frame):
                 ischat = True
             return raw, ischat
 
-        def getMessengerNames(conversations):
+        def getMessengerNames(conversations): # Left listbox
             ischats = []
             names = []
             usernames = []
@@ -234,13 +234,15 @@ class MainWindow(wx.Frame):
                 if conversation['conversation']['peer']['type'] == 'chat':
                     ischats.append(1)
                     chatnames.append(conversation['conversation']['chat_settings']['title'])
+                    ids.append(conversation['conversation']['peer']['id'])
                 elif conversation['conversation']['peer']['type'] == 'user':
                     ischats.append(0)
                     userids.append(conversation['conversation']['peer']['id'])
+                    ids.append(conversation['conversation']['peer']['id'])
                 elif conversation['conversation']['peer']['type'] == 'group':
                     ischats.append(2)
                     groupids.append(-conversation['conversation']['peer']['id'])
-                ids.append(conversation['conversation']['peer']['id'])
+                    ids.append(conversation['conversation']['peer']['id'])
             for userdata in vk.users.get(user_ids=userids):
                 usernames.append(userdata['first_name']+" "+userdata['last_name'])
             for groupdata in vk.groups.getById(group_ids=groupids):
@@ -253,9 +255,35 @@ class MainWindow(wx.Frame):
                 elif ischat == 2:
                     names.append(groupnames.pop(0))
             return [names,ids]
+        def getUsernamesInChat(uids):
+            names = []
+            usernames = []
+            groupnames = []
+            groupids = []
+            userids = []
+            ids=[]
+            for uid in uids:
+                self.statusbar.SetStatusText(locale['loading'] + " {}/{}".format(conversations['items'].index(conversation),len(conversations['items']))) 
+                if uid > 0:
+                    userids.append(uid)
+                else:
+                    groupids.append(-uid)
+            
+            for userdata in vk.users.get(user_ids=userids):
+                usernames.append(userdata['first_name']+" "+userdata['last_name'])
+            ids.extend(userids)
+
+            for groupdata in vk.groups.getById(group_ids=groupids):
+                groupnames.append(groupdata['name'])
+            for groupid in groupids:
+                ids.append(-groupid)
+
+            names.extend(groupnames)
+            return dict(zip(ids, names))
+
         def getMessages(id):
             messages=[]
-            self.statusbar.SetStatusText(locale['loading'] + locale['messages'])
+            self.statusbar.SetStatusText(locale['loading']+" "+locale['messages'])
             messagesHistory = vk.messages.getHistory(count=200,peer_id=id, fields=[])
             for message in messagesHistory['items']:
                 messages.append(message['text'])
