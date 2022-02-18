@@ -25,10 +25,29 @@ locale_en_US = {
     "loading": "Loading",
     "messages":"Messages"
 }
+locale_ru_RU = {
+    "quit": "Выйти",
+    "login": "Логин",
+    "password": "Пароль",
+    "gettoken": "Получить токен",
+    "token": "Токен",
+    "enter_credentials": "Введите учетные данные",
+    "sumbit": "Подтвердить",
+    "2fa": "Введите 2FA код",
+    "tryauth": "Пытаюсь авторизоваться...",
+    "success": "Успешно!",
+    "error": "Ошибка",
+    "badpass": "Неверный пароль",
+    "savecreds": "Запомнить учетные данные",
+    "loading": "Загрузка",
+    "messages": "Сообщения"
+}
 locale = {}
 
 if language == "en_US":
     locale = locale_en_US
+elif language == "ru_RU":
+    locale = locale_ru_RU
 
 token_page = "https://vkhost.github.io/"
 
