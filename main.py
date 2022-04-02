@@ -4,50 +4,9 @@ import vk_api
 import webbrowser
 import sqlite3
 from threading import Thread
-from locale import getdefaultlocale
-language, _ = getdefaultlocale()
-del getdefaultlocale
-print(language)
-locale_en_US = {
-    "quit": "Quit",
-    "login": "Login",
-    "password": "Password",
-    "gettoken": "Get token",
-    "token": "Token",
-    "enter_credentials" : "Enter your credentials",
-    "sumbit" : "Sumbit",
-    '2fa' : "Enter 2FA code",
-    "tryauth": "Trying to authorize...",
-    "success" : "Success!",
-    "error" : "Error",
-    "badpass": "Wrong password",
-    "savecreds": "Remember credentials",
-    "loading": "Loading",
-    "messages":"Messages"
-}
-locale_ru_RU = {
-    "quit": "Выйти",
-    "login": "Логин",
-    "password": "Пароль",
-    "gettoken": "Получить токен",
-    "token": "Токен",
-    "enter_credentials": "Введите учетные данные",
-    "sumbit": "Подтвердить",
-    "2fa": "Введите 2FA код",
-    "tryauth": "Пытаюсь авторизоваться...",
-    "success": "Успешно!",
-    "error": "Ошибка",
-    "badpass": "Неверный пароль",
-    "savecreds": "Запомнить учетные данные",
-    "loading": "Загрузка",
-    "messages": "Сообщения"
-}
-locale = {}
 
-if language == "en_US":
-    locale = locale_en_US
-elif language == "ru_RU":
-    locale = locale_ru_RU
+from .locales import locale
+
 
 token_page = "https://vkhost.github.io/"
 
